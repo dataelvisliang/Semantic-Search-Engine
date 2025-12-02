@@ -1,0 +1,136 @@
+# Example Configuration - Copy this to config.yaml and customize
+
+# =============================================================================
+# EXAMPLE 1: Amazon Product Reviews
+# =============================================================================
+dataset:
+  file_path: "data/amazon_reviews.csv"
+
+text_columns:
+  - name: "summary"
+    display_name: "Summary"
+    column: "Summary"
+
+  - name: "review"
+    display_name: "Review Text"
+    column: "Text"
+
+metadata:
+  date_column: "Date"
+  score_column: "Score"      # 1-5 star ratings
+  id_column: "Id"
+  display_columns:
+    - "ProductId"
+    - "UserId"
+
+app:
+  title: "Amazon Reviews Analyzer"
+  page_icon: "🛍️"
+  default_search_target: "summary"
+  default_top_k_retrieval: 1000
+  default_top_k_rerank: 500
+  default_score_threshold: 0.60
+
+embeddings:
+  model: "sentence-transformers/all-MiniLM-L6-v2"
+  batch_size: 32
+  output_dir: "embeddings"
+
+
+# =============================================================================
+# EXAMPLE 2: Customer Support Tickets
+# =============================================================================
+# dataset:
+#   file_path: "data/support_tickets.csv"
+#
+# text_columns:
+#   - name: "subject"
+#     display_name: "Subject"
+#     column: "Subject"
+#
+#   - name: "description"
+#     display_name: "Description"
+#     column: "Description"
+#
+# metadata:
+#   date_column: "CreatedAt"
+#   score_column: "Priority"     # 1=Low, 5=Critical
+#   id_column: "TicketId"
+#   display_columns:
+#     - "Status"
+#     - "Category"
+#     - "AssignedTo"
+#
+# app:
+#   title: "Support Ticket Analyzer"
+#   page_icon: "🎫"
+#   default_search_target: "description"
+#
+# embeddings:
+#   model: "sentence-transformers/all-MiniLM-L6-v2"
+#   batch_size: 32
+#   output_dir: "embeddings"
+
+
+# =============================================================================
+# EXAMPLE 3: Survey Responses
+# =============================================================================
+# dataset:
+#   file_path: "data/employee_survey.csv"
+#
+# text_columns:
+#   - name: "feedback"
+#     display_name: "Open-Ended Feedback"
+#     column: "OpenEndedResponse"
+#
+# metadata:
+#   date_column: "SubmittedDate"
+#   score_column: "SatisfactionScore"  # 0-10 scale
+#   id_column: "ResponseId"
+#   display_columns:
+#     - "Department"
+#     - "EmployeeType"
+#     - "YearsOfService"
+#
+# app:
+#   title: "Employee Feedback Analyzer"
+#   page_icon: "📊"
+#   default_search_target: "feedback"
+#
+# embeddings:
+#   model: "sentence-transformers/all-MiniLM-L6-v2"
+#   batch_size: 32
+#   output_dir: "embeddings"
+
+
+# =============================================================================
+# EXAMPLE 4: Social Media Comments
+# =============================================================================
+# dataset:
+#   file_paths:  # Multiple files
+#     - "data/twitter_2023.csv"
+#     - "data/twitter_2024.csv"
+#
+# text_columns:
+#   - name: "tweet"
+#     display_name: "Tweet Content"
+#     column: "TweetText"
+#
+# metadata:
+#   date_column: "CreatedAt"
+#   score_column: "LikeCount"
+#   id_column: "TweetId"
+#   display_columns:
+#     - "Username"
+#     - "RetweetCount"
+#     - "Hashtags"
+#
+# app:
+#   title: "Social Media Analyzer"
+#   page_icon: "🐦"
+#   default_search_target: "tweet"
+#
+# embeddings:
+#   model: "sentence-transformers/all-MiniLM-L6-v2"
+#   batch_size: 32
+#   output_dir: "embeddings"

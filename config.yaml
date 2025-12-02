@@ -1,0 +1,65 @@
+# Semantic Search Engine Configuration
+# Edit this file to customize for your dataset
+
+# Dataset configuration
+dataset:
+  # Path to your CSV file (relative or absolute)
+  file_path: "data/dataset.csv"
+
+  # Optional: If dataset is split across multiple files
+  # file_paths:
+  #   - "data/part1.csv"
+  #   - "data/part2.csv"
+
+# Text columns to embed for semantic search
+# Each entry creates a searchable field
+text_columns:
+  - name: "summary"           # Internal identifier (no spaces)
+    display_name: "Summary"   # Display name in UI
+    column: "Summary"         # Actual column name in CSV
+
+  - name: "text"
+    display_name: "Review Text"
+    column: "Text"
+
+# Metadata columns for filtering and visualization
+metadata:
+  # Column containing dates/timestamps for trend analysis
+  # Should be parseable by pandas (e.g., "2023-01-15", "2023-01-15 10:30:00")
+  date_column: "Date"
+
+  # Column containing numeric scores for distribution charts
+  # Should contain numbers (e.g., ratings 1-5, sentiment scores 0-100)
+  score_column: "Score"
+
+  # Optional: Unique identifier column
+  id_column: "Id"
+
+  # Optional: Additional columns to display in results
+  display_columns:
+    - "ProductId"
+    - "UserId"
+
+# Application settings
+app:
+  title: "Semantic Search Engine"
+  page_icon: "🔍"
+
+  # Default search target (must match one of the text_columns "name" values)
+  default_search_target: "summary"
+
+  # Search parameters defaults
+  default_top_k_retrieval: 1000
+  default_top_k_rerank: 500
+  default_score_threshold: 0.60
+
+# Embedding settings
+embeddings:
+  # Model to use for embeddings
+  model: "sentence-transformers/all-MiniLM-L6-v2"
+
+  # Batch size for encoding
+  batch_size: 32
+
+  # Output directory for embeddings
+  output_dir: "embeddings"

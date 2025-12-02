@@ -1,0 +1,7 @@
+streamlit==1.32.0
+pandas==2.2.1
+numpy==1.26.4
+sentence-transformers==2.5.1
+scikit-learn==1.4.1.post1
+plotly==5.20.0
+PyYAML==6.0.1
