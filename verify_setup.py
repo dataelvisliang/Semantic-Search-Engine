@@ -14,19 +14,19 @@ def load_config():
     config_path = Path("config.yaml")
 
     if not config_path.exists():
-        print("❌ Error: config.yaml not found!")
-        print("\n💡 Quick fix:")
+        print("[ERROR] config.yaml not found!")
+        print("\nQuick fix:")
         print("   cp config.example.yaml config.yaml")
         print("   # Then edit config.yaml to match your dataset")
         return None
 
     try:
-        with open(config_path, 'r') as f:
+        with open(config_path, 'r', encoding='utf-8') as f:
             config = yaml.safe_load(f)
-        print("✅ config.yaml loaded successfully")
+        print("[OK] config.yaml loaded successfully")
         return config
     except yaml.YAMLError as e:
-        print(f"❌ Error parsing config.yaml: {e}")
+        print(f"[ERROR] Error parsing config.yaml: {e}")
         return None
 
 
@@ -38,16 +38,16 @@ def check_dataset(config):
     if 'file_path' in dataset_config:
         file_path = Path(dataset_config['file_path'])
         if not file_path.exists():
-            print(f"❌ Error: Dataset file not found: {file_path}")
-            print(f"\n💡 Expected location: {file_path.absolute()}")
+            print(f"[ERROR] Dataset file not found: {file_path}")
+            print(f"\nExpected location: {file_path.absolute()}")
             return None
 
         try:
             df = pd.read_csv(file_path, nrows=5)
-            print(f"✅ Dataset file found: {file_path}")
+            print(f"[OK] Dataset file found: {file_path}")
             return df
         except Exception as e:
-            print(f"❌ Error reading CSV: {e}")
+            print(f"[ERROR] Error reading CSV: {e}")
             return None
 
     # Check for multiple files
@@ -56,20 +56,20 @@ def check_dataset(config):
 
         for fp in file_paths:
             if not fp.exists():
-                print(f"❌ Error: Dataset file not found: {fp}")
+                print(f"[ERROR] Dataset file not found: {fp}")
                 return None
 
         try:
             dfs = [pd.read_csv(fp, nrows=5) for fp in file_paths]
             df = pd.concat(dfs, ignore_index=True)
-            print(f"✅ All {len(file_paths)} dataset files found")
+            print(f"[OK] All {len(file_paths)} dataset files found")
             return df
         except Exception as e:
-            print(f"❌ Error reading CSV files: {e}")
+            print(f"[ERROR] Error reading CSV files: {e}")
             return None
 
     else:
-        print("❌ Error: config.yaml must specify 'file_path' or 'file_paths'")
+        print("[ERROR] config.yaml must specify 'file_path' or 'file_paths'")
         return None
 
 
@@ -78,63 +78,63 @@ def validate_columns(config, df):
     errors = []
 
     # Check text columns
-    print("\n📝 Validating text columns...")
+    print("\nValidating text columns...")
     for text_col in config.get('text_columns', []):
         col_name = text_col['column']
         if col_name in df.columns:
-            print(f"  ✅ '{col_name}' ({text_col['display_name']})")
+            print(f"  [OK] '{col_name}' ({text_col['display_name']})")
         else:
-            print(f"  ❌ '{col_name}' NOT FOUND")
+            print(f"  [ERROR] '{col_name}' NOT FOUND")
             errors.append(f"Text column '{col_name}' not found in dataset")
 
     # Check metadata columns
-    print("\n📊 Validating metadata columns...")
+    print("\nValidating metadata columns...")
     metadata = config.get('metadata', {})
 
     date_col = metadata.get('date_column')
     if date_col:
         if date_col in df.columns:
-            print(f"  ✅ Date column: '{date_col}'")
+            print(f"  [OK] Date column: '{date_col}'")
             # Try parsing a sample date
             try:
                 pd.to_datetime(df[date_col].iloc[0])
-                print(f"     ✅ Date format is parseable")
+                print(f"       [OK] Date format is parseable")
             except:
-                print(f"     ⚠️  Warning: Date format may not be parseable by pandas")
+                print(f"       [WARN] Date format may not be parseable by pandas")
         else:
-            print(f"  ❌ Date column '{date_col}' NOT FOUND")
+            print(f"  [ERROR] Date column '{date_col}' NOT FOUND")
             errors.append(f"Date column '{date_col}' not found")
 
     score_col = metadata.get('score_column')
     if score_col:
         if score_col in df.columns:
-            print(f"  ✅ Score column: '{score_col}'")
+            print(f"  [OK] Score column: '{score_col}'")
             # Check if numeric
             try:
                 float(df[score_col].iloc[0])
-                print(f"     ✅ Score column is numeric")
+                print(f"       [OK] Score column is numeric")
             except:
-                print(f"     ⚠️  Warning: Score column may not be numeric")
+                print(f"       [WARN] Score column may not be numeric")
         else:
-            print(f"  ❌ Score column '{score_col}' NOT FOUND")
+            print(f"  [ERROR] Score column '{score_col}' NOT FOUND")
             errors.append(f"Score column '{score_col}' not found")
 
     id_col = metadata.get('id_column')
     if id_col:
         if id_col in df.columns:
-            print(f"  ✅ ID column: '{id_col}'")
+            print(f"  [OK] ID column: '{id_col}'")
         else:
-            print(f"  ⚠️  ID column '{id_col}' not found (optional)")
+            print(f"  [WARN] ID column '{id_col}' not found (optional)")
 
     # Check display columns
     display_cols = metadata.get('display_columns', [])
     if display_cols:
-        print("\n📋 Validating display columns...")
+        print("\nValidating display columns...")
         for col in display_cols:
             if col in df.columns:
-                print(f"  ✅ '{col}'")
+                print(f"  [OK] '{col}'")
             else:
-                print(f"  ⚠️  '{col}' not found (optional, but won't display)")
+                print(f"  [WARN] '{col}' not found (optional, but won't display)")
 
     return errors
 
@@ -142,7 +142,7 @@ def validate_columns(config, df):
 def show_dataset_info(df):
     """Display dataset summary"""
     print("\n" + "="*60)
-    print("📊 Dataset Summary")
+    print("Dataset Summary")
     print("="*60)
     print(f"Columns: {len(df.columns)}")
     print(f"Sample size (first 5 rows loaded)")
@@ -153,7 +153,7 @@ def show_dataset_info(df):
 
 
 def main():
-    print("🔍 Semantic Search Engine - Setup Verification")
+    print("Semantic Search Engine - Setup Verification")
     print("="*60)
 
     # Step 1: Load config
@@ -162,7 +162,7 @@ def main():
         sys.exit(1)
 
     # Step 2: Check dataset
-    print("\n📂 Checking dataset...")
+    print("\nChecking dataset...")
     df = check_dataset(config)
     if df is None:
         sys.exit(1)
@@ -176,15 +176,15 @@ def main():
     # Final verdict
     print("\n" + "="*60)
     if errors:
-        print("❌ Configuration has errors:")
+        print("[ERROR] Configuration has errors:")
         for error in errors:
             print(f"  - {error}")
-        print("\n💡 Fix these issues in config.yaml, then run this script again")
+        print("\nFix these issues in config.yaml, then run this script again")
         sys.exit(1)
     else:
-        print("✅ All checks passed! You're ready to run:")
+        print("[OK] All checks passed! You're ready to run:")
         print("\n   python generate_embeddings.py")
-        print("\n🚀 After embeddings are generated, run:")
+        print("\nAfter embeddings are generated, run:")
         print("\n   streamlit run app.py")
         sys.exit(0)
 

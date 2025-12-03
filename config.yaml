@@ -1,10 +1,17 @@
 # Semantic Search Engine Configuration
 # Edit this file to customize for your dataset
+#
+# INSTRUCTIONS:
+# - Fields marked as REQUIRED must be provided
+# - Fields marked as OPTIONAL can be commented out if not needed
+# - To comment out a field, add # at the start of the line
+# - Example:
+#   # id_column: "Id"              <- This field is commented out and will be ignored
 
 # Dataset configuration
 dataset:
   # Path to your CSV file (relative or absolute)
-  file_path: "data/dataset.csv"
+  file_path: "data/sample_data.csv"
 
   # Optional: If dataset is split across multiple files
   # file_paths:
@@ -14,31 +21,36 @@ dataset:
 # Text columns to embed for semantic search
 # Each entry creates a searchable field
 text_columns:
-  - name: "summary"           # Internal identifier (no spaces)
-    display_name: "Summary"   # Display name in UI
-    column: "Summary"         # Actual column name in CSV
+  - name: "summary"           # Internal identifier (no spaces, used for files/code)
+    display_name: "Summary"   # Display name shown in the UI
+    column: "Summary"         # EXACT column name from your CSV file
 
-  - name: "text"
-    display_name: "Review Text"
-    column: "Text"
+  - name: "text"              # Internal identifier
+    display_name: "Review Text"  # Display name shown in the UI
+    column: "Text"            # EXACT column name from your CSV file
 
 # Metadata columns for filtering and visualization
 metadata:
-  # Column containing dates/timestamps for trend analysis
+  # REQUIRED: Column containing dates/timestamps for trend analysis
+  # IMPORTANT: Use the EXACT column name from your CSV file
   # Should be parseable by pandas (e.g., "2023-01-15", "2023-01-15 10:30:00")
-  date_column: "Date"
+  date_column: "READDATE"      # EXACT column name from CSV
 
-  # Column containing numeric scores for distribution charts
+  # REQUIRED: Column containing numeric scores for distribution charts
+  # IMPORTANT: Use the EXACT column name from your CSV file
   # Should contain numbers (e.g., ratings 1-5, sentiment scores 0-100)
-  score_column: "Score"
+  score_column: "RATING"       # EXACT column name from CSV
 
-  # Optional: Unique identifier column
-  id_column: "Id"
+  # OPTIONAL: Unique identifier column
+  # You can comment out this entire line if your CSV doesn't have an ID column
+  id_column: "Id"              # EXACT column name from CSV (optional - can be commented out)
 
-  # Optional: Additional columns to display in results
+  # OPTIONAL: Additional columns to display in results
+  # You can comment out this entire section if you don't need extra display columns
+  # IMPORTANT: Use the EXACT column names from your CSV file
   display_columns:
-    - "ProductId"
-    - "UserId"
+    - "ProductId"              # EXACT column name from CSV
+    - "UserId"                 # EXACT column name from CSV
 
 # Application settings
 app:
@@ -47,6 +59,9 @@ app:
 
   # Default search target (must match one of the text_columns "name" values)
   default_search_target: "summary"
+
+  # Search query input placeholder text (shown when search box is empty)
+  search_placeholder: "e.g., no tea flavor"
 
   # Search parameters defaults
   default_top_k_retrieval: 1000
@@ -63,3 +78,23 @@ embeddings:
 
   # Output directory for embeddings
   output_dir: "embeddings"
+
+
+# ==============================================================================
+# EXAMPLES: How to comment out optional fields
+# ==============================================================================
+#
+# If you don't have an ID column in your CSV:
+#   metadata:
+#     date_column: "Date"
+#     score_column: "Score"
+#     # id_column: "Id"              <- Commented out
+#
+# If you don't want to display additional columns:
+#   metadata:
+#     date_column: "Date"
+#     score_column: "Score"
+#     # display_columns:              <- Comment out the entire section
+#     #   - "ProductId"
+#     #   - "UserId"
+# ==============================================================================

@@ -21,7 +21,7 @@ from typing import Dict, List, Any
 @st.cache_data
 def load_config(config_path: str = "config.yaml") -> Dict[str, Any]:
     """Load configuration from YAML file."""
-    with open(config_path, 'r') as f:
+    with open(config_path, 'r', encoding='utf-8') as f:
         config = yaml.safe_load(f)
     return config
 
@@ -121,18 +121,18 @@ def semantic_search(query_embedding, embeddings, top_k=500):
     return top_indices, top_scores
 
 
-def aggregate_by_period(df, period='month'):
+def aggregate_by_period(df, date_column, period='month'):
     """
     Aggregate results by time period
     """
-    df['date'] = pd.to_datetime(df['date'])
+    df[date_column] = pd.to_datetime(df[date_column])
 
     if period == 'day':
-        df['period'] = df['date'].dt.strftime('%Y-%m-%d')
+        df['period'] = df[date_column].dt.strftime('%Y-%m-%d')
     elif period == 'month':
-        df['period'] = df['date'].dt.strftime('%Y-%m')
+        df['period'] = df[date_column].dt.strftime('%Y-%m')
     else:  # year
-        df['period'] = df['date'].dt.strftime('%Y')
+        df['period'] = df[date_column].dt.strftime('%Y')
 
     # Count by period
     period_counts = df.groupby('period').size().reset_index(name='count')
@@ -266,9 +266,10 @@ def main():
     st.markdown("##### 🔍 Search")
 
     # Search input
+    search_placeholder = CONFIG['app'].get('search_placeholder', 'Enter your search query...')
     search_query = st.text_input(
         "Enter search phrase:",
-        placeholder="e.g., no tea flavor",
+        placeholder=search_placeholder,
         help="Enter keywords or phrases to search for"
     )
 
@@ -347,12 +348,15 @@ def main():
     for text_col in CONFIG['text_columns']:
         available_columns.append(search_target_display[text_col['name']])
 
-    available_columns.extend(['Date', 'Score'])
+    # Add date and score columns from config
+    date_col = CONFIG['metadata']['date_column']
+    score_col = CONFIG['metadata']['score_column']
+    available_columns.extend([date_col, score_col])
 
     selected_columns = st.multiselect(
         "Select columns to display:",
         options=available_columns,
-        default=[search_target_display[selected_target], 'Date', 'Score'][:2],
+        default=[search_target_display[selected_target], date_col, score_col][:2],
         help="Choose which columns to show in the preview table"
     )
 
@@ -422,7 +426,7 @@ def main():
         results_data = {
             'index': filtered_indices,
             'relevance_score': filtered_scores,
-            'date': st.session_state.metadata[date_col][filtered_indices],
+            date_col: st.session_state.metadata[date_col][filtered_indices],
             score_col: st.session_state.metadata[score_col][filtered_indices]
         }
 
@@ -437,10 +441,10 @@ def main():
         # Step 7: Date range filtering
         if len(date_range) == 2:
             start_date, end_date = date_range
-            results_df['date'] = pd.to_datetime(results_df['date'])
+            results_df[date_col] = pd.to_datetime(results_df[date_col])
             results_df = results_df[
-                (results_df['date'].dt.date >= start_date) &
-                (results_df['date'].dt.date <= end_date)
+                (results_df[date_col].dt.date >= start_date) &
+                (results_df[date_col].dt.date <= end_date)
             ]
 
         if len(results_df) == 0:
@@ -454,12 +458,15 @@ def main():
         if selected_columns:
             preview_df = results_df[selected_columns].head(20).copy()
 
-            # Configure columns
+            # Configure columns using actual column names from config
+            date_col = CONFIG['metadata']['date_column']
+            score_col = CONFIG['metadata']['score_column']
+
             column_config = {}
-            if 'Date' in selected_columns:
-                column_config['Date'] = st.column_config.DateColumn("Date", format="YYYY-MM-DD", width="small")
-            if 'Score' in selected_columns:
-                column_config['Score'] = st.column_config.NumberColumn("Score", format="%.2f", width="small")
+            if date_col in selected_columns:
+                column_config[date_col] = st.column_config.DateColumn(date_col, format="YYYY-MM-DD", width="small")
+            if score_col in selected_columns:
+                column_config[score_col] = st.column_config.NumberColumn(score_col, format="%.2f", width="small")
 
             st.dataframe(
                 preview_df,
@@ -492,7 +499,8 @@ def main():
 
         # Generate visualizations
         if chart_type in ['trend', 'both']:
-            period_counts, results_with_period = aggregate_by_period(results_df.copy(), period=period_type)
+            date_col = CONFIG['metadata']['date_column']
+            period_counts, results_with_period = aggregate_by_period(results_df.copy(), date_col, period=period_type)
 
             st.plotly_chart(
                 create_trend_chart(period_counts, period_type),
@@ -510,6 +518,9 @@ def main():
             st.markdown("---")
             st.subheader(f"📝 Top Results by {period_type.capitalize()}")
 
+            date_col = CONFIG['metadata']['date_column']
+            score_col = CONFIG['metadata']['score_column']
+
             for period in period_counts['period'].values[::-1]:
                 period_data = results_with_period[results_with_period['period'] == period]
                 period_sorted = period_data.nlargest(10, 'relevance_score')
@@ -522,7 +533,7 @@ def main():
                             # Display the selected search target text
                             text_content = row[search_target_display[selected_target]]
                             st.markdown(f"**{text_content}**")
-                            st.caption(f"Date: {row['date']}")
+                            st.caption(f"{date_col}: {row[date_col]}")
 
                         with col_b:
                             score_color = 'green' if row['relevance_score'] >= 0.8 else 'orange' if row['relevance_score'] >= 0.6 else 'red'

@@ -15,7 +15,7 @@ import sys
 
 def load_config(config_path: str = "config.yaml") -> Dict[str, Any]:
     """Load configuration from YAML file."""
-    with open(config_path, 'r') as f:
+    with open(config_path, 'r', encoding='utf-8') as f:
         config = yaml.safe_load(f)
     return config
 
@@ -69,13 +69,13 @@ def validate_config(config: Dict[str, Any], df: pd.DataFrame) -> None:
                 errors.append(f"Display column '{col}' not found in dataset")
 
     if errors:
-        print("\n❌ Configuration validation errors:")
+        print("\n[ERROR] Configuration validation errors:")
         for error in errors:
             print(f"  - {error}")
         print(f"\nAvailable columns in dataset: {list(df.columns)}")
         sys.exit(1)
 
-    print("✅ Configuration validated successfully")
+    print("[OK] Configuration validated successfully")
 
 
 def generate_embeddings_for_column(
@@ -172,20 +172,20 @@ def main():
         internal_name = text_col['name']
         metadata[internal_name] = df[col_name].fillna('').values
 
-    # Add date column
+    # Add date column (use the actual column name as the key)
     date_col = config['metadata']['date_column']
-    metadata['dates'] = df[date_col].values
+    metadata[date_col] = df[date_col].values
 
-    # Add score column
+    # Add score column (use the actual column name as the key)
     score_col = config['metadata']['score_column']
-    metadata['scores'] = df[score_col].values
+    metadata[score_col] = df[score_col].values
 
-    # Add ID column if specified
+    # Add ID column if specified (use the actual column name as the key)
     if 'id_column' in config['metadata']:
         id_col = config['metadata']['id_column']
-        metadata['ids'] = df[id_col].values
+        metadata[id_col] = df[id_col].values
 
-    # Add display columns if specified
+    # Add display columns if specified (use the actual column names as keys)
     if 'display_columns' in config['metadata']:
         for col in config['metadata']['display_columns']:
             metadata[col] = df[col].values
@@ -202,7 +202,7 @@ def main():
     total_size = sum(info['size'] for info in embedding_files.values()) + metadata_size
 
     print(f"\n{'='*60}")
-    print("✅ Embedding generation complete!")
+    print("[OK] Embedding generation complete!")
     print(f"{'='*60}")
     print(f"\nGenerated embeddings:")
     for name, info in embedding_files.items():
