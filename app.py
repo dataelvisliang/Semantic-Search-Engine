@@ -51,6 +51,8 @@ if 'reranker' not in st.session_state:
     st.session_state.reranker = None
 if 'preview_seed' not in st.session_state:
     st.session_state.preview_seed = 0
+if 'search_results' not in st.session_state:
+    st.session_state.search_results = None
 
 
 @st.cache_resource
@@ -188,24 +190,32 @@ def create_trend_chart(period_counts, period_type):
     return fig
 
 
-def create_score_distribution_chart(scores):
+def create_score_distribution_chart(scores, score_display_name="Score"):
     """
     Create pie chart for score distribution
+    Args:
+        scores: Array of scores from the CSV file
+        score_display_name: Display name for the score (from config)
     """
-    # Define score ranges
-    bins = [0.0, 0.6, 0.7, 0.8, 0.9, 1.0]
-    labels = ['0.0-0.6', '0.6-0.7', '0.7-0.8', '0.8-0.9', '0.9-1.0']
-    score_ranges = pd.cut(scores, bins=bins, labels=labels, include_lowest=True)
+    # Count distribution (for integer ratings like 1-5)
+    score_counts = pd.Series(scores).value_counts().sort_index()
 
-    # Count distribution
-    dist = score_ranges.value_counts().sort_index()
+    # Generate colors based on number of unique scores
+    num_scores = len(score_counts)
+    if num_scores <= 5:
+        # For ratings 1-5, use color gradient from red to green
+        colors = ['#e74c3c', '#f39c12', '#f1c40f', '#2ecc71', '#27ae60'][:num_scores]
+    else:
+        # For more scores, use a gradient
+        colors = [f'rgb({int(231-231*i/num_scores)}, {int(76+180*i/num_scores)}, {int(60)})'
+                  for i in range(num_scores)]
 
     fig = go.Figure(data=[go.Pie(
-        labels=dist.index,
-        values=dist.values,
+        labels=[str(label) for label in score_counts.index],
+        values=score_counts.values,
         hole=0.4,
         marker=dict(
-            colors=['#e74c3c', '#f39c12', '#f1c40f', '#2ecc71', '#27ae60'],
+            colors=colors,
             line=dict(color='white', width=2)
         ),
         textinfo='label+percent',
@@ -213,13 +223,16 @@ def create_score_distribution_chart(scores):
         hovertemplate='<b>%{label}</b><br>Count: %{value}<br>Percentage: %{percent}<extra></extra>'
     )])
 
+    # Calculate average rating
+    avg_score = np.mean(scores)
+
     fig.update_layout(
         title=dict(
-            text="🥧 Relevance Score Distribution",
+            text=f"🥧 {score_display_name} Distribution",
             font=dict(size=20, color='#2c3e50', family="Arial Black")
         ),
         annotations=[dict(
-            text=f'Total<br>{len(scores)}',
+            text=f'Total: {len(scores)}<br>Avg: {avg_score:.2f}',
             x=0.5, y=0.5,
             font=dict(size=16, color='#34495e', family="Arial"),
             showarrow=False
@@ -343,23 +356,6 @@ def main():
             help="Only show results with relevance score greater than this threshold"
         )
 
-    # Column selector for preview
-    available_columns = []
-    for text_col in CONFIG['text_columns']:
-        available_columns.append(search_target_display[text_col['name']])
-
-    # Add date and score columns from config
-    date_col = CONFIG['metadata']['date_column']
-    score_col = CONFIG['metadata']['score_column']
-    available_columns.extend([date_col, score_col])
-
-    selected_columns = st.multiselect(
-        "Select columns to display:",
-        options=available_columns,
-        default=[search_target_display[selected_target], date_col, score_col][:2],
-        help="Choose which columns to show in the preview table"
-    )
-
     st.markdown("---")
 
     # Search button
@@ -413,6 +409,9 @@ def main():
         filtered_indices = rerank_indices[mask]
         filtered_scores = rerank_scores[mask]
 
+        # Get corresponding cosine similarity scores for filtered results
+        filtered_cos_scores = cos_scores[:top_k_rerank][mask]
+
         if len(filtered_indices) == 0:
             st.warning(f"No results found with relevance score > {score_threshold:.2f}. Try lowering the score threshold or a different query.")
             st.stop()
@@ -425,6 +424,7 @@ def main():
 
         results_data = {
             'index': filtered_indices,
+            'cosine_similarity': filtered_cos_scores,
             'relevance_score': filtered_scores,
             date_col: st.session_state.metadata[date_col][filtered_indices],
             score_col: st.session_state.metadata[score_col][filtered_indices]
@@ -449,10 +449,45 @@ def main():
 
         if len(results_df) == 0:
             st.warning("No results found in the selected date range")
-            st.stop()
+            st.session_state.search_results = None
+        else:
+            # Store results in session state
+            st.session_state.search_results = {
+                'results_df': results_df,
+                'selected_target': selected_target,
+                'search_target_display': search_target_display
+            }
+
+    # Display results (outside the button block so they persist)
+    if st.session_state.search_results is not None:
+        results_df = st.session_state.search_results['results_df']
+        selected_target = st.session_state.search_results['selected_target']
+        search_target_display = st.session_state.search_results['search_target_display']
 
         # Step 8: Preview results
         st.markdown("---")
+
+        # Column selector for preview
+        available_columns = []
+        for text_col in CONFIG['text_columns']:
+            available_columns.append(search_target_display[text_col['name']])
+
+        # Add similarity and relevance score columns
+        available_columns.append('cosine_similarity')
+        available_columns.append('relevance_score')
+
+        # Add date and score columns from config
+        date_col = CONFIG['metadata']['date_column']
+        score_col = CONFIG['metadata']['score_column']
+        available_columns.extend([date_col, score_col])
+
+        selected_columns = st.multiselect(
+            "Select columns to display:",
+            options=available_columns,
+            default=[search_target_display[selected_target], date_col, score_col][:2],
+            help="Choose which columns to show in the preview table"
+        )
+
         st.subheader(f"📋 Preview Results (Top {min(20, len(results_df))} of {len(results_df)})")
 
         if selected_columns:
@@ -467,6 +502,10 @@ def main():
                 column_config[date_col] = st.column_config.DateColumn(date_col, format="YYYY-MM-DD", width="small")
             if score_col in selected_columns:
                 column_config[score_col] = st.column_config.NumberColumn(score_col, format="%.2f", width="small")
+            if 'cosine_similarity' in selected_columns:
+                column_config['cosine_similarity'] = st.column_config.NumberColumn("Cosine Similarity", format="%.4f", width="small")
+            if 'relevance_score' in selected_columns:
+                column_config['relevance_score'] = st.column_config.NumberColumn("Relevance Score", format="%.4f", width="small")
 
             st.dataframe(
                 preview_df,
@@ -498,6 +537,9 @@ def main():
             )
 
         # Generate visualizations
+        period_counts = None
+        results_with_period = None
+
         if chart_type in ['trend', 'both']:
             date_col = CONFIG['metadata']['date_column']
             period_counts, results_with_period = aggregate_by_period(results_df.copy(), date_col, period=period_type)
@@ -508,13 +550,15 @@ def main():
             )
 
         if chart_type in ['distribution', 'both']:
+            score_col = CONFIG['metadata']['score_column']
+            score_display_name = CONFIG['metadata'].get('score_display_name', score_col)
             st.plotly_chart(
-                create_score_distribution_chart(results_df['relevance_score'].values),
+                create_score_distribution_chart(results_df[score_col].values, score_display_name),
                 use_container_width=True
             )
 
-        # Step 10: Detailed results by period
-        if chart_type in ['trend', 'both']:
+        # Step 10: Detailed results by period (only show if trend chart was generated)
+        if chart_type in ['trend', 'both'] and period_counts is not None:
             st.markdown("---")
             st.subheader(f"📝 Top Results by {period_type.capitalize()}")
 

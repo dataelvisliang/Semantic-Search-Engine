@@ -1,4 +1,4 @@
-Id,ProductId,UserId,READDATE,RATING,Summary,Text
+Id,ProductId,UserId,REALDATE,RATING,Summary,Text
 1,B001,U001,2024-01-15,5,Excellent coffee maker,This coffee maker is absolutely fantastic! The brew quality is outstanding and it's very easy to use. Makes perfect coffee every morning. Highly recommend for coffee lovers.
 2,B001,U002,2024-01-18,4,Good but noisy,Works well and makes good coffee but it's quite loud when brewing. Otherwise satisfied with the purchase. The coffee tastes great.
 3,B002,U003,2024-01-22,2,Disappointed with quality,Expected better quality for the price. The product feels cheap and broke after two weeks. Not worth the money. Customer service was unhelpful.

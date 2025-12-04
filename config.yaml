@@ -34,12 +34,13 @@ metadata:
   # REQUIRED: Column containing dates/timestamps for trend analysis
   # IMPORTANT: Use the EXACT column name from your CSV file
   # Should be parseable by pandas (e.g., "2023-01-15", "2023-01-15 10:30:00")
-  date_column: "READDATE"      # EXACT column name from CSV
+  date_column: "REALDATE"      # EXACT column name from CSV
 
   # REQUIRED: Column containing numeric scores for distribution charts
   # IMPORTANT: Use the EXACT column name from your CSV file
   # Should contain numbers (e.g., ratings 1-5, sentiment scores 0-100)
-  score_column: "RATING"       # EXACT column name from CSV
+  score_column: "RATING"           # EXACT column name from CSV
+  score_display_name: "Rating"     # Display name for score column in charts and UI
 
   # OPTIONAL: Unique identifier column
   # You can comment out this entire line if your CSV doesn't have an ID column
